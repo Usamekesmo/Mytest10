@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الاختبار التعليمي المتقدم للحفظ</title>
+    
+    <!-- CSS Styles -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@700&family=Cairo:wght@400;700&display=swap');
+        
+        body {
+            font-family: 'Cairo', sans-serif; text-align: center; background-color: #f0f7f6;
+            color: #333; line-height: 1.8;
+        }
+        .container {
+            max-width: 800px; margin: 20px auto; padding: 25px; background-color: #ffffff;
+            border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .hidden { display: none; }
+        h1, h2, h3 { color: #004d40; font-family: 'Amiri', serif; }
+        input, select {
+            width: 80%; padding: 12px; font-size: 16px; border: 1px solid #ccc;
+            border-radius: 5px; margin-bottom: 15px; font-family: 'Cairo', sans-serif;
+        }
+        button {
+            padding: 12px 25px; font-size: 18px; font-weight: bold; cursor: pointer;
+            border: none; border-radius: 5px; background-color: #00796b;
+            color: white; transition: background-color 0.3s;
+        }
+        button:hover { background-color: #004d40; }
+        button:disabled { background-color: #999; cursor: not-allowed; }
+        #question-area { margin-top: 20px; padding: 15px; position: relative; }
+        audio { width: 100%; margin: 15px 0; }
+        .interactive-area {
+            display: flex; justify-content: center; gap: 15px; margin: 20px 0;
+            flex-wrap: wrap; direction: ltr;
+        }
+        .choice-box, .number-box {
+            padding: 15px 20px; border: 2px solid #ddd; border-radius: 10px;
+            font-size: 20px; font-weight: bold; cursor: pointer; transition: all 0.2s;
+        }
+        .choice-box:hover, .number-box:hover { background-color: #e0f2f1; border-color: #00796b; }
+        .number-box.selected { background-color: #00796b; color: white; }
+        .option-div {
+            margin: 10px 0; padding: 15px; border: 2px solid #ddd; border-radius: 8px;
+            cursor: pointer; transition: all 0.2s; font-size: 20px;
+            font-family: 'Amiri', serif; text-align: right;
+        }
+        .option-div:hover { background-color: #e0f2f1; border-color: #00796b; }
+        .loader {
+            border: 8px solid #f3f3f3; border-radius: 50%; border-top: 8px solid #00796b;
+            width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 20px auto;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #feedback-area {
+            font-size: 1.2em; font-weight: bold; padding: 10px;
+            border-radius: 5px; margin-top: 15px;
+        }
+        .correct-feedback { color: #155724; background-color: #d4edda; }
+        .wrong-feedback { color: #721c24; background-color: #f8d7da; }
+        .correct-answer { background-color: #d4edda !important; border-color: #28a745 !important; }
+        .wrong-answer { background-color: #f8d7da !important; border-color: #dc3545 !important; }
+        #page-map {
+            display: grid; grid-template-columns: repeat(15, 1fr); gap: 2px; height: 40px;
+            margin: 20px auto; border: 1px solid #ccc; padding: 5px; direction: rtl;
+        }
+        .map-line { background-color: #eee; border: 1px solid #fff; }
+        .map-line.highlighted { background-color: #00796b; }
+        #progress-container {
+            width: 100%; background-color: #e0e0e0; border-radius: 5px; margin-top: 10px;
+        }
+        #progress-bar {
+            width: 0%; height: 10px; background-color: #00796b;
+            border-radius: 5px; transition: width 0.5s ease-in-out;
+        }
+        #progress-counter { font-size: 16px; color: #555; margin-bottom: 5px; }
+        #best-score-display {
+            margin-top: 10px; font-size: 16px; color: #004d40; font-weight: bold;
+        }
+        .error-review-item {
+            border: 2px solid #f8d7da; padding: 15px; margin-bottom: 20px;
+            border-radius: 8px; text-align: right;
+        }
+        .error-review-item h4 { margin-top: 0; }
+        .correct-text { color: #155724; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div id="start-screen" class="container">
+        <h1>الاختبار التعليمي المتقدم للحفظ</h1>
+        <p>اختر القارئ، وحدد الصفحة وعدد الأسئلة لبدء الاختبار.</p>
+        <input type="text" id="userName" placeholder="أدخل اسمك هنا">
+        <br>
+        <input type="number" id="pageNumber" placeholder="أدخل رقم الصفحة (1-604)" min="1" max="604">
+        <div id="best-score-display"></div>
+        <br>
+        <select id="qariSelect">
+            <option value="ar.alafasy" selected>مشاري العفاسي</option>
+            <option value="ar.abdulbasitmurattal">عبد الباسط عبد الصمد (مرتل)</option>
+            <option value="ar.husary">محمود خليل الحصري</option>
+            <option value="ar.minshawi">محمد صديق المنشاوي</option>
+        </select>
+        <br>
+        <select id="questionsCount">
+            <option value="5">5 أسئلة</option>
+            <option value="10" selected>10 أسئلة</option>
+            <option value="15">15 سؤالاً</option>
+            <option value="20">20 سؤالاً</option>
+        </select>
+        <br><br>
+        <button id="startButton">ابدأ الاختبار</button>
+        <div id="loader" class="loader hidden"></div>
+    </div>
+
+    <div id="quiz-screen" class="container hidden">
+        <div id="progress-counter"></div>
+        <div id="progress-container"><div id="progress-bar"></div></div>
+        <hr>
+        <div id="question-area"></div>
+        <div id="feedback-area" class="hidden"></div>
+    </div>
+
+    <div id="error-review-screen" class="container hidden">
+        <h2>مراجعة الأخطاء</h2>
+        <p>هذه هي الأسئلة التي أخطأت فيها. راجعها جيداً لتثبيت الحفظ.</p>
+        <div id="error-list"></div>
+        <button id="show-final-result-button">عرض النتيجة النهائية</button>
+    </div>
+
+    <div id="result-screen" class="container hidden">
+        <h2>النتيجة النهائية</h2>
+        <p>أحسنت يا <span id="resultName"></span>!</p>
+        <p>نتيجتك هي: <span id="finalScore"></span></p>
+        <p id="new-best-score-message" style="color: #004d40; font-weight: bold;"></p>
+        <button onclick="location.reload()">إجراء اختبار جديد</button>
+    </div>
+
+    <script>
+        // Part 2: JavaScript - Setup and Core Functions
+
+        const startScreen = document.getElementById('start-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const errorReviewScreen = document.getElementById('error-review-screen');
+        const resultScreen = document.getElementById('result-screen');
+        const loader = document.getElementById('loader');
+        const userNameInput = document.getElementById('userName');
+        const pageNumberInput = document.getElementById('pageNumber');
+        const bestScoreDisplay = document.getElementById('best-score-display');
+        const qariSelect = document.getElementById('qariSelect');
+        const questionsCountSelect = document.getElementById('questionsCount');
+        const startButton = document.getElementById('startButton');
+        const questionArea = document.getElementById('question-area');
+        const feedbackArea = document.getElementById('feedback-area');
+        const progressCounter = document.getElementById('progress-counter');
+        const progressBar = document.getElementById('progress-bar');
+        const errorList = document.getElementById('error-list');
+        const showFinalResultButton = document.getElementById('show-final-result-button');
+
+        let pageAyahs = [];
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let totalQuestions = 10;
+        let selectedQari = 'ar.alafasy';
+        let audioQueue = [];
+        let audioPlayer = new Audio();
+        let errorLog = [];
+        let currentQuestionData = {};
+
+        // القائمة النهائية والمحدثة لأنواع الأسئلة (18 نوعًا)
+        const questionTypes = [
+            'audioSort', 'audioIntruder', 'findPageAyah', 'chooseNext', 'choosePrevious', 
+            'locateAyah', 'completeAyah', 'completeLastWord', 'identifyAyahNumber', 'visualMap', 
+            'identifyAyahEnd', 'scrambledVerse', 'findAndPlace', 'textSort', 'audioChooseNext', 
+            'audioChoosePrevious', 'audioFindFirst', 'audioFindLast'
+        ];
+
+        const shuffleArray = array => array.sort(() => 0.5 - Math.random());
+
+        pageNumberInput.addEventListener('input', () => {
+            const page = pageNumberInput.value;
+            if (page) {
+                const bestScore = localStorage.getItem(`bestScore_page${page}`);
+                if (bestScore) {
+                    bestScoreDisplay.textContent = `أفضل نتيجة سابقة لهذه الصفحة: ${bestScore}`;
+                } else {
+                    bestScoreDisplay.textContent = 'لم يتم إجراء اختبار لهذه الصفحة من قبل.';
+                }
+            } else {
+                bestScoreDisplay.textContent = '';
+            }
+        });
+
+        startButton.addEventListener('click', async () => {
+            const userName = userNameInput.value;
+            const pageNumber = pageNumberInput.value;
+            totalQuestions = parseInt(questionsCountSelect.value);
+            selectedQari = qariSelect.value;
+
+            if (!userName || !pageNumber || pageNumber < 1 || pageNumber > 604) {
+                alert('الرجاء إدخال بيانات صحيحة.');
+                return;
+            }
+
+            loader.classList.remove('hidden');
+            startButton.disabled = true;
+
+            try {
+                const [pageResponse, linesResponse] = await Promise.all([
+                    fetch(`https://api.alquran.cloud/v1/page/${pageNumber}/quran-uthmani`),
+                    fetch(`https://api.alquran.cloud/v1/page/${pageNumber}/quran-uthmani-lines`)
+                ]);
+                const pageData = await pageResponse.json();
+                const linesData = await linesResponse.json();
+                loader.classList.add('hidden');
+
+                if (pageData.code === 200 && pageData.data.ayahs.length >= 4 && linesData.code === 200) {
+                    pageAyahs = pageData.data.ayahs.map(ayah => {
+                        const lineInfo = linesData.data.ayahs.find(la => la.number === ayah.number);
+                        return { ...ayah, line: lineInfo ? lineInfo.line : null };
+                    });
+                    
+                    startScreen.classList.add('hidden');
+                    quizScreen.classList.remove('hidden');
+                    displayQuestion();
+                } else {
+                    alert('هذه الصفحة لا تحتوي على 4 آيات على الأقل، أو حدث خطأ في جلب بيانات الأسطر.');
+                    startButton.disabled = false;
+                }
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                loader.classList.add('hidden');
+                startButton.disabled = false;
+                alert('لا يمكن الوصول إلى الخادم. تحقق من اتصالك بالإنترنت.');
+            }
+        });
+
+        showFinalResultButton.addEventListener('click', () => {
+            errorReviewScreen.classList.add('hidden');
+            showResults();
+        });
+
+        function displayQuestion() {
+            if (currentQuestionIndex >= totalQuestions) {
+                endQuiz();
+                return;
+            }
+            
+            updateProgress();
+            feedbackArea.classList.add('hidden');
+            const randomType = shuffleArray(questionTypes)[0];
+            questionArea.innerHTML = `<div class="loader"></div>`;
+            
+            setTimeout(() => {
+                try {
+                    currentQuestionData = { type: randomType };
+                    switch (randomType) {
+                        case 'audioSort': generateAudioSortQuestion(); break;
+                        case 'audioIntruder': generateAudioIntruderQuestion(); break;
+                        case 'findPageAyah': generateFindPageAyahQuestion(); break;
+                        case 'chooseNext': generateChooseNextQuestion(); break;
+                        case 'choosePrevious': generateChoosePreviousQuestion(); break;
+                        case 'locateAyah': generateLocateAyahQuestion(); break;
+                        case 'completeAyah': generateCompleteAyahQuestion(); break;
+                        case 'completeLastWord': generateCompleteLastWordQuestion(); break;
+                        case 'identifyAyahNumber': generateIdentifyAyahNumberQuestion(); break;
+                        case 'visualMap': generateVisualMapQuestion(); break;
+                        case 'identifyAyahEnd': generateIdentifyAyahEndQuestion(); break;
+                        case 'scrambledVerse': generateScrambledVerseQuestion(); break;
+                        case 'findAndPlace': generateFindAndPlaceQuestion(); break;
+                        case 'textSort': generateTextSortQuestion(); break;
+                        case 'audioChooseNext': generateAudioChooseNextQuestion(); break;
+                        case 'audioChoosePrevious': generateAudioChoosePreviousQuestion(); break;
+                        case 'audioFindFirst': generateAudioFindFirstQuestion(); break;
+                        case 'audioFindLast': generateAudioFindLastQuestion(); break;
+                    }
+                } catch (e) {
+                    console.error("Failed to generate question type:", randomType, e);
+                    generateChooseNextQuestion(); // Fallback question
+                }
+                currentQuestionIndex++;
+            }, 300);
+        }
+
+        function updateProgress() {
+            progressCounter.textContent = `السؤال ${currentQuestionIndex + 1} من ${totalQuestions}`;
+            progressBar.style.width = `${((currentQuestionIndex) / totalQuestions) * 100}%`;
+        }
+
+        function handleResult(isCorrect, correctAnswerText) {
+            const interactiveElements = questionArea.querySelectorAll('.choice-box, .option-div, .number-box, button');
+            interactiveElements.forEach(el => el.style.pointerEvents = 'none');
+            
+            feedbackArea.classList.remove('hidden');
+            if (isCorrect) {
+                score++;
+                feedbackArea.textContent = 'إجابة صحيحة! أحسنت.';
+                feedbackArea.className = 'correct-feedback';
+            } else {
+                feedbackArea.innerHTML = `إجابة خاطئة. <br> ${correctAnswerText}`;
+                feedbackArea.className = 'wrong-feedback';
+                currentQuestionData.correctAnswer = correctAnswerText;
+                currentQuestionData.questionHTML = questionArea.innerHTML;
+                errorLog.push(currentQuestionData);
+            }
+            setTimeout(displayQuestion, 4000); // زيادة الوقت لرؤية الإجابة
+        }
+
+        function endQuiz() {
+            progressBar.style.width = '100%';
+            quizScreen.classList.add('hidden');
+            if (errorLog.length > 0) {
+                displayErrorReview();
+            } else {
+                showResults();
+            }
+        }
+
+        function displayErrorReview() {
+            errorReviewScreen.classList.remove('hidden');
+            errorList.innerHTML = '';
+            errorLog.forEach(error => {
+                const item = document.createElement('div');
+                item.className = 'error-review-item';
+                item.innerHTML = `<h4>سؤال خاطئ</h4>
+                                  <div>${error.questionHTML.replace(/<button.*<\/button>/g, '')}</div>
+                                  <p>الإجابة الصحيحة: <span class="correct-text">${error.correctAnswer}</span></p>`;
+                item.querySelectorAll('.choice-box, .option-div, .number-box').forEach(el => {
+                    el.style.pointerEvents = 'none';
+                    if (el.dataset.correct !== 'true') {
+                        el.style.opacity = '0.5';
+                    } else {
+                        el.classList.add('correct-answer');
+                    }
+                });
+                errorList.appendChild(item);
+            });
+        }
+
+        function showResults() {
+            resultScreen.classList.remove('hidden');
+            document.getElementById('resultName').textContent = userNameInput.value;
+            document.getElementById('finalScore').textContent = `${score} من ${totalQuestions}`;
+            const page = pageNumberInput.value;
+            const bestScoreKey = `bestScore_page${page}`;
+            const oldBestScore = localStorage.getItem(bestScoreKey) || 0;
+            if (score > oldBestScore) {
+                localStorage.setItem(bestScoreKey, score);
+                document.getElementById('new-best-score-message').textContent = '🎉 أحسنت! لقد حققت رقماً قياسياً جديداً لهذه الصفحة!';
+            }
+        }
+
+        function playAudioQueue() {
+            if (audioQueue.length === 0) return;
+            audioPlayer.src = audioQueue.shift();
+            audioPlayer.play();
+            audioPlayer.onended = () => {
+                if (audioQueue.length > 0) {
+                    audioPlayer.src = audioQueue.shift();
+                    audioPlayer.play();
+                }
+            };
+        }
+        
+        function playSingleAudio(url) {
+            if (!audioPlayer.paused) {
+                audioPlayer.pause();
+                audioPlayer.currentTime = 0;
+            }
+            audioPlayer.src = url;
+            audioPlayer.play();
+        }
+
+        function addChoiceListeners(correctAnswerText) {
+            questionArea.querySelectorAll('.choice-box, .option-div, .number-box[data-correct]').forEach(el => {
+                if (el.dataset.listenerAttached) return;
+                el.dataset.listenerAttached = 'true';
+                el.addEventListener('click', () => {
+                    const isCorrect = el.dataset.correct === 'true';
+                    handleResult(isCorrect, correctAnswerText);
+                    el.classList.add(isCorrect ? 'correct-answer' : 'wrong-answer');
+                    if (!isCorrect) {
+                        const correctEl = questionArea.querySelector('[data-correct="true"]');
+                        if (correctEl) correctEl.classList.add('correct-answer');
+                    }
+                });
+            });
+        }
+        // Part 3: JavaScript - Question Generator Functions (A)
+
+        function generateAudioSortQuestion() {
+            let selectedAyahs = shuffleArray([...pageAyahs]).slice(0, 4);
+            let shuffledAyahs = shuffleArray([...selectedAyahs]);
+            let correctSequence = selectedAyahs.sort((a, b) => a.number - b.number).map(a => shuffledAyahs.indexOf(a) + 1);
+            audioQueue = shuffledAyahs.map(a => `https://cdn.islamic.network/quran/audio/128/${selectedQari}/${a.number}.mp3`);
+            currentQuestionData.title = "ترتيب الآيات";
+            questionArea.innerHTML = `<h3>السؤال ${currentQuestionIndex + 1}: استمع للآيات ثم رتبها</h3><button onclick="playAudioQueue()">▶️ تشغيل</button><div class="interactive-area" id="sort-area">${shuffledAyahs.map((_, i) => `<div class="number-box" data-index="${i+1}">${i + 1}</div>`).join('')}</div><p>الترتيب:</p><div id="user-sequence" style="font-size: 22px; font-weight: bold; color: #004d40; height: 40px;"></div><button id="check-button">تحقق</button>`;
+            let userSequence = [];
+            document.querySelectorAll('#sort-area .number-box').forEach(box => {
+                box.addEventListener('click', () => {
+                    if (userSequence.length >= 4) return;
+                    const num = parseInt(box.dataset.index);
+                    if (userSequence.includes(num)) return;
+                    userSequence.push(num);
+                    document.getElementById('user-sequence').textContent = userSequence.join(' → ');
+                    box.classList.add('selected');
+                });
+            });
+            document.getElementById('check-button').addEventListener('click', () => {
+                const isCorrect = userSequence.length === correctSequence.length && userSequence.every((val, index) => val === correctSequence[index]);
+                handleResult(isCorrect, `الترتيب الصحيح هو: ${correctSequence.join(' → ')}`);
+            });
+        }
+        async function generateAudioIntruderQuestion() {
+            let correctAyahs = shuffleArray([...pageAyahs]).slice(0, 3);
+            let otherPage = parseInt(pageNumberInput.value) % 604 + 1;
+            const response = await fetch(`https://api.alquran.cloud/v1/page/${otherPage}/quran-uthmani`);
+            const data = await response.json();
+            const intruderAyah = data.data.ayahs[0];
+            let allFourAyahs = shuffleArray([...correctAyahs, intruderAyah]);
+            let intruderIndex = allFourAyahs.indexOf(intruderAyah) + 1;
+            audioQueue = allFourAyahs.map(a => `https://cdn.islamic.network/quran/audio/128/${selectedQari}/${a.number}.mp3`);
+            currentQuestionData.title = "الآية الدخيلة";
+            questionArea.innerHTML = `<h3>السؤال ${currentQuestionIndex + 1}: استمع وحدد الآية الدخيلة</h3><button onclick="playAudioQueue()">▶️ تشغيل</button><div class="interactive-area">${allFourAyahs.map((_, i) => `<div class="number-box" data-index="${i + 1}" data-correct="${(i+1) === intruderIndex}">${i + 1}</div>`).join('')}</div>`;
+            addChoiceListeners(`الآية الدخيلة كانت رقم ${intruderIndex}`);
+        }
+        async function generateFindPageAyahQuestion() {
+            const correctAyah = shuffleArray([...pageAyahs])[0];
+            let intruderAyahs = [];
+            for(let i=0; i<3; i++) {
+                let otherPage = (parseInt(pageNumberInput.value) + i + 2) % 604 + 1;
+                const response = await fetch(`https://api.alquran.cloud/v1/page/${otherPage}/quran-uthmani`);
+                const data = await response.json();
+                intruderAyahs.push(data.data.ayahs[i % data.data.ayahs.length]);
+            }
+            let allFourAyahs = shuffleArray([correctAyah, ...intruderAyahs]);
+            let correctIndex = allFourAyahs.indexOf(correctAyah) + 1;
+            audioQueue = allFourAyahs.map(a => `https://cdn.islamic.network/quran/audio/128/${selectedQari}/${a.number}.mp3`);
+            currentQuestionData.title = "آية الصفحة";
+            questionArea.innerHTML = `<h3>السؤال ${currentQuestionIndex + 1}: استمع وحدد الآية التي تنتمي لهذه الصفحة</h3><button onclick="playAudioQueue()">▶️ تشغيل</button><div class="interactive-area">${allFourAyahs.map((_, i) => `<div class="number-box" data-index="${i + 1}" data-correct="${(i+1) === correctIndex}">${i + 1}</div>`).join('')}</div>`;
+            addChoiceListeners(`الآية الصحيحة كانت رقم ${correctIndex}`);
+        }
+        function generateChooseNextQuestion() {
+            const startIndex = Math.floor(Math.random() * (pageAyahs.length - 1));
+            const questionAyah = pageAyahs[startIndex];
+            const correctNextAyah = pageAyahs[startIndex + 1];
+            let wrongOptions = pageAyahs.filter(a => a.number !== correctNextAyah.number && a.number !== questionAyah.number).slice(0, 2);
+            const options = shuffleArray([correctNextAyah, ...wrongOptions]);
+            currentQuestionData.title = "اختر الآية التالية";
+            questionArea.innerHTML = `<h3>السؤال ${currentQuestionIndex + 1}: استمع واختر الآية التالية</h3><audio controls autoplay src="https://cdn.islamic.network/quran/audio/128/${selectedQari}/${questionAyah.number}.mp3"></audio>${options.map(opt => `<div class="option-div" data-correct="${opt.number === correctNextAyah.number}">${opt.text}</div>`).join('')}`;
+            addChoiceListeners(correctNextAyah.text);
+        }
+        function generateChoosePreviousQuestion() {
+            const startIndex = Math.floor(Math.random() * (pageAyahs.length - 1)) + 1;
+            const questionAyah = pageAyahs[startIndex];
+            const correctPreviousAyah = pageAyahs[startIndex - 1];
+            let wrongOptions = pageAyahs.filter(a => a.number !== correctPreviousAyah.number && a.number !== questionAyah.number).slice(0, 2);
+            const options = shuffleArray([correctPreviousAyah, ...wrongOptions]);
+            currentQuestionData.title = "اختر الآية السابقة";
+            questionArea.innerHTML = `<h3>السؤال ${currentQuestionIndex + 1}: استمع واختر الآية السابقة</h3><audio controls autoplay src="https://cdn.islamic.network/quran/audio/128/${selectedQari}/${questionAyah.number}.mp3"></audio>${options.map(opt => `<div class="option-div" data-correct="${opt.number === correctPreviousAyah.number}">${opt.text}</div>`).join('')}`;
+            addChoiceListeners(correctPreviousAyah.text);
+        }
+        function generateLocateAyahQuestion() {
+            const ayahIndex = Math.floor(Math.random() * pageAyahs.length);
+            const questionAyah = pageAyahs[ayahIndex];
+            const totalAyahs = pageAyahs.length;
+            let correctLocation;
+            if (ayahIndex < totalAyahs / 3) correctLocation = 'بداية';
+            else if (ayahIndex < (totalAyahs * 2) / 3) correctLocation = 'وسط';
+            else correctLocation = 'نهاية';
+            currentQuestionData.title = "موضع الآية";
+            questionArea.innerHTML = `<h3>السؤال ${currentQuestionIndex + 1}: أين يقع موضع هذه الآية في الصفحة؟</h3><audio controls autoplay src="https://cdn.islamic.network/quran/audio/128/${selectedQari}/${questionAyah.number}.mp3"></audio><div class="interactive-area">${['بداية', 'وسط', 'نهاية'].map(loc => `<div class="choice-box" data-correct="${loc === correctLocation}">${loc} الصفحة</div>`).join('')}</div>`;
+            addChoiceListeners(`${correctLocation} الصفحة`);
+        }
+        function generateCompleteAyahQuestion() {
+            const longAyahs = pageAyahs.filter(a => a.text.split(' ').length > 8);
+            if (longAyahs.length < 3) return generateChooseNextQuestion();
+            const questionAyah = shuffleArray(longAyahs)[0];
+            const words = questionAyah.text.split(' ');
+            const splitPoint = Math.floor(words.length / 2);
+            const firstHalfText = words.slice(0, splitPoint).join(' ');
+            const correctSecondHalf = words.slice(splitPoint).join(' ');
+            const wrongAyahs = pageAyahs.filter(a => a.number !== questionAyah.number);
+            const wrongOptions = shuffleArray(wrongAyahs).slice(0, 2).map(a => a.text.split(' ').slice(Math.floor(a.text.split(' ').length / 2)).join(' '));
+            const options = shuffleArray([correctSecondHalf, ...wrongOptions]);
+            currentQuestionData.title = "أكمل الآية";
+            questionArea.innerHTML = `<h3>السؤال ${currentQuestionIndex + 1}: استمع لبداية الآية، ثم اختر تكملتها الصحيحة</h3><p style="font-family: 'Amiri', serif; font-size: 22px;">"${firstHalfText}..."</p><audio controls autoplay src="https://cdn.islamic.network/quran/audio/128/${selectedQari}/${questionAyah.number}.mp3"></audio>${options.map(opt => `<div class="option-div" data-correct="${opt.replace(/'/g, "\\'") === correctSecondHalf.replace(/'/g, "\\'")}">${opt}</div>`).join('')}`;
+            addChoiceListeners(correctSecondHalf);
+        }
+        function generateCompleteLastWordQuestion() {
+            const suitableAyahs = pageAyahs.filter(a => a.text.split(' ').length > 3);
+            if (suitableAyahs.length < 4) return generateChooseNextQuestion();
+            const questionAyah = shuffleArray(suitableAyahs)[0];
+            const words = questionAyah.text.split(' ');
+            const correctLastWord = words.pop();
+            const incompleteAyahText = words.join(' ');
+            const wrongOptions = shuffleArray(suitableAyahs.filter(a => a.number !== questionAyah.number)).slice(0, 3).map(a => a.text.split(' ').pop());
+            const options = shuffleArray([correctLastWord, ...wrongOptions]);
+            currentQuestionData.title = "أكمل الكلمة الأخيرة";
+            questionArea.innerHTML = `<h3>السؤال ${currentQuestionIndex + 1}: اختر الكلمة الصحيحة لإكمال الآية التالية:</h3><p style="font-family: 'Amiri', serif; font-size: 22px;">${incompleteAyahText} (...)</p><audio controls autoplay src="https://cdn.islamic.network/quran/audio/128/${selectedQari}/${questionAyah.number}.mp3"></audio><div class="interactive-area">${options.map(opt => `<div class="choice-box" data-correct="${opt === correctLastWord}">${opt}</div>`).join('')}</div>`;
+            addChoiceListeners(correctLastWord);
+        }
+        function generateIdentifyAyahNumberQuestion() {
+            const questionAyah = shuffleArray(pageAyahs)[0];
+            const correctNumber = questionAyah.numberInSurah;
+            let options = [correctNumber];
+            while (options.length < 4) {
+                const wrongNumber = correctNumber + Math.floor(Math.random() * 5) - 2;
+                if (wrongNumber > 0 && !options.includes(wrongNumber)) {
+                    options.push(wrongNumber);
+                }
+            }
+            currentQuestionData.title = "تحديد رقم الآية";
+            questionArea.innerHTML = `<h3>السؤال ${currentQuestionIndex + 1}: استمع للآية، ثم اختر رقمها الصحيح في السورة</h3><audio controls autoplay src="https://cdn.islamic.network/quran/audio/128/${selectedQari}/${questionAyah.number}.mp3"></audio><div class="interactive-area">${shuffleArray(options).map(opt => `<div class="choice-box" data-correct="${opt === correctNumber}">${opt}</div>`).join('')}</div>`;
+            addChoiceListeners(correctNumber);
+        }
+        function generateVisualMapQuestion() {
+            const ayahsWithLines = pageAyahs.filter(a => a.line);
+            if (ayahsWithLines.length < 3) return generateLocateAyahQuestion();
+            const questionAyah = shuffleArray(ayahsWithLines)[0];
+            const correctLine = questionAyah.line;
+            let wrongOptions = shuffleArray(ayahsWithLines.filter(a => a.number !== questionAyah.number)).slice(0, 2);
+            const options = shuffleArray([questionAyah, ...wrongOptions]);
+            let mapHTML = '';
+            for (let i = 1; i <= 15; i++) {
+                mapHTML += `<div class="map-line ${i === correctLine ? 'highlighted' : ''}"></div>`;
+            }
+            currentQuestionData.title = "الخريطة البصرية";
+            questionArea.innerHTML = `<h3>السؤال ${currentQuestionIndex + 1}: أي من الآيات التالية تبدأ في السطر الملون؟</h3><div id="page-map">${mapHTML}</div>${options.map(opt => `<div class="option-div" data-correct="${opt.number === questionAyah.number}">${opt.text}</div>`).join('')}`;
+            addChoiceListeners(questionAyah.text);
+        }
+        function generateIdentifyAyahEndQuestion() {
+            if (pageAyahs.length < 2) return generateChooseNextQuestion();
+            const startIndex = Math.floor(Math.random() * (pageAyahs.length - 1));
+            const firstAyah = pageAyahs[startIndex];
+            const secondAyah = pageAyahs[startIndex + 1];
+            const firstAyahWords = firstAyah.text.split(' ');
+            const secondAyahWords = secondAyah.text.split(' ');
+            if (firstAyahWords.length < 2 || secondAyahWords.length < 1) return generateChooseNextQuestion();
+            const correctWord = firstAyahWords[firstAyahWords.length - 1];
+            const options = shuffleArray([correctWord, firstAyahWords[firstAyahWords.length - 2], secondAyahWords[0], secondAyahWords[Math.min(1, secondAyahWords.length - 1)]]);
+            audioQueue = [`https://cdn.islamic.network/quran/audio/128/${selectedQari}/${firstAyah.number}.mp3`, `https://cdn.islamic.network/quran/audio/128/${selectedQari}/${secondAyah.number}.mp3`];
+            currentQuestionData.title = "تحديد فاصل الآية";
+            questionArea.innerHTML = `<h3>السؤال ${currentQuestionIndex + 1}: استمع للتلاوة المتصلة، ثم حدد الكلمة التي انتهت بها الآية الأولى</h3><button onclick="playAudioQueue()">▶️ تشغيل</button><div class="interactive-area">${options.map(opt => `<div class="choice-box" data-correct="${opt === correctWord}">${opt}</div>`).join('')}</div>`;
+            addChoiceListeners(correctWord);
+        }
+        // Part 4: JavaScript - Question Generator Functions (B) & Final Code
+
+        function generateScrambledVerseQuestion() {
+            const suitableAyahs = pageAyahs.filter(a => a.text.split(' ').length >= 5 && a.text.split(' ').length <= 12);
+            if (suitableAyahs.length === 0) return generateChooseNextQuestion(); 
+            const questionAyah = shuffleArray(suitableAyahs)[0];
+            const originalWords = questionAyah.text.split(' ');
+            const scrambledWords = shuffleArray([...originalWords]);
+            currentQuestionData.title = "ترتيب كلمات الآية";
+            questionArea.innerHTML = `<h3>السؤال ${currentQuestionIndex + 1}: رتب كلمات الآية التالية بالترتيب الصحيح</h3><div id="user-scrambled-sequence" class="option-div" style="min-height: 50px; text-align: right; background-color: #e9ecef;"></div><p>الكلمات المتاحة:</p><div class="interactive-area" id="scrambled-words-area">${scrambledWords.map(word => `<div class="choice-box word-to-sort">${word}</div>`).join('')}</div><button id="check-scramble-button">تحقق من الترتيب</button>`;
+            const userSequenceDiv = document.getElementById('user-scrambled-sequence');
+            const checkButton = document.getElementById('check-scramble-button');
+            let userWords = [];
+            document.querySelectorAll('.word-to-sort').forEach(wordBox => {
+                wordBox.addEventListener('click', () => {
+                    userWords.push(wordBox.textContent);
+                    userSequenceDiv.textContent = userWords.join(' ');
+                    wordBox.style.display = 'none';
+                });
+            });
+            checkButton.addEventListener('click', () => {
+                const isCorrect = userWords.join(' ') === originalWords.join(' ');
+                handleResult(isCorrect, `الترتيب الصحيح هو: ${originalWords.join(' ')}`);
+            });
+        }
+        async function generateFindAndPlaceQuestion() {
+            try {
+                const correctAyah = shuffleArray([...pageAyahs])[0];
+                let intruderAyahs = [];
+                for(let i = 0; i < 3; i++) {
+                    let otherPage = (parseInt(pageNumberInput.value) + i + 5) % 604 + 1; 
+                    const response = await fetch(`https://api.alquran.cloud/v1/page/${otherPage}/quran-uthmani`);
+                    const data = await response.json();
+                    intruderAyahs.push(data.data.ayahs[i % data.data.ayahs.length]);
+                }
+                let allFourAyahs = shuffleArray([correctAyah, ...intruderAyahs]);
+                const correctPosition = allFourAyahs.indexOf(correctAyah) + 1; 
+                audioQueue = allFourAyahs.map(a => `https://cdn.islamic.network/quran/audio/128/${selectedQari}/${a.number}.mp3`);
+                currentQuestionData.title = "تحديد الآية وموضعها";
+                questionArea.innerHTML = `<h3>السؤال ${currentQuestionIndex + 1}: استمع جيدًا، آية واحدة فقط تنتمي لهذه الصفحة.</h3><p>اضغط على الرقم الذي يمثل ترتيب سماعها في المقطع الصوتي.</p><button onclick="playAudioQueue()">▶️ تشغيل المقطع الصوتي</button><div class="interactive-area">${[1, 2, 3, 4].map(num => `<div class="number-box" data-correct="${num === correctPosition}">${num}</div>`).join('')}</div>`;
+                addChoiceListeners(`الآية الصحيحة كانت في الموضع رقم ${correctPosition}`);
+            } catch (e) {
+                console.error("Failed to generate FindAndPlace question:", e);
+                return generateAudioIntruderQuestion();
+            }
+        }
+        function generateTextSortQuestion() {
+            if (pageAyahs.length < 4) return generateChooseNextQuestion();
+            const selectedAyahs = shuffleArray([...pageAyahs]).slice(0, 4);
+            const correctOrderAyahs = [...selectedAyahs].sort((a, b) => a.number - b.number);
+            const scrambledAyahs = shuffleArray([...selectedAyahs]);
+            currentQuestionData.title = "ترتيب الآيات النصية";
+            questionArea.innerHTML = `<h3>السؤال ${currentQuestionIndex + 1}: رتب الآيات التالية حسب تسلسلها في الصفحة</h3><p>الترتيب الذي اخترته:</p><div id="user-text-sequence" class="option-div" style="min-height: 80px; text-align: right; background-color: #e9ecef; font-family: 'Amiri', serif; font-size: 20px;"></div><hr><p>الآيات المتاحة (اضغط للترتيب):</p><div id="text-sort-area">${scrambledAyahs.map(ayah => `<div class="option-div text-to-sort" data-ayah-number="${ayah.number}">${ayah.text}</div>`).join('')}</div><button id="check-text-sort-button">تحقق من الترتيب</button>`;
+            const userSequenceDiv = document.getElementById('user-text-sequence');
+            const checkButton = document.getElementById('check-text-sort-button');
+            let userSequenceNumbers = [];
+            let userSequenceText = [];
+            document.querySelectorAll('.text-to-sort').forEach(ayahBox => {
+                ayahBox.addEventListener('click', () => {
+                    if (userSequenceNumbers.length >= 4) return;
+                    const ayahNum = parseInt(ayahBox.dataset.ayahNumber);
+                    const ayahText = ayahBox.textContent;
+                    userSequenceNumbers.push(ayahNum);
+                    userSequenceText.push(ayahText);
+                    userSequenceDiv.innerHTML = userSequenceText.map((text, index) => `<p>${index + 1}. ${text}</p>`).join('');
+                    ayahBox.style.display = 'none';
+                });
+            });
+            checkButton.addEventListener('click', () => {
+                const isCorrect = userSequenceNumbers.length === 4 && userSequenceNumbers.every((num, index) => num === correctOrderAyahs[index].number);
+                const correctAnswerText = correctOrderAyahs.map(a => a.text).join('<br>');
+                handleResult(isCorrect, `الترتيب الصحيح هو:<br>${correctAnswerText}`);
+            });
+        }
+
+        // --- MODIFIED FUNCTION (Choose Next Ayah) ---
+        function generateAudioChooseNextQuestion() {
+            if (pageAyahs.length < 4) return generateChooseNextQuestion(); // Fallback to text version
+            
+            const startIndex = Math.floor(Math.random() * (pageAyahs.length - 1));
+            const questionAyah = pageAyahs[startIndex];
+            const correctNextAyah = pageAyahs[startIndex + 1];
+
+            let wrongOptions = pageAyahs.filter(a => 
+                a.number !== questionAyah.number && 
+                a.number !== correctNextAyah.number
+            );
+            wrongOptions = shuffleArray(wrongOptions).slice(0, 2);
+
+            const options = shuffleArray([correctNextAyah, ...wrongOptions]);
+            const correctPosition = options.indexOf(correctNextAyah) + 1;
+
+            audioQueue = options.map(a => `https://cdn.islamic.network/quran/audio/128/${selectedQari}/${a.number}.mp3`);
+            
+            currentQuestionData.title = "اختر الآية التالية (سمعيًا)";
+            questionArea.innerHTML = `<h3>السؤال ${currentQuestionIndex + 1}: استمع للآية التالية، ثم حدد الآية التي تليها من المقطع الصوتي.</h3>
+                                      <p>الآية الرئيسية:</p>
+                                      <audio controls autoplay src="https://cdn.islamic.network/quran/audio/128/${selectedQari}/${questionAyah.number}.mp3"></audio>
+                                      <hr>
+                                      <p>استمع للمقطع التالي الذي يحتوي على الآية الصحيحة، ثم اختر ترتيبها.</p>
+                                      <button onclick="playAudioQueue()">▶️ تشغيل مقطع الخيارات</button>
+                                      <div class="interactive-area">
+                                        ${[1, 2, 3].map(num => `<div class="number-box" data-correct="${num === correctPosition}">${num}</div>`).join('')}
+                                      </div>`;
+            
+            addChoiceListeners(`الآية التالية كانت في الموضع رقم ${correctPosition}. <br>وهي: "${correctNextAyah.text.substring(0, 50)}..."`);
+        }
+
+        // --- MODIFIED FUNCTION (Choose Previous Ayah) ---
+        function generateAudioChoosePreviousQuestion() {
+            if (pageAyahs.length < 4) return generateChoosePreviousQuestion(); // Fallback to text version
+
+            const startIndex = Math.floor(Math.random() * (pageAyahs.length - 1)) + 1;
+            const questionAyah = pageAyahs[startIndex];
+            const correctPreviousAyah = pageAyahs[startIndex - 1];
+
+            let wrongOptions = pageAyahs.filter(a => 
+                a.number !== questionAyah.number && 
+                a.number !== correctPreviousAyah.number
+            );
+            wrongOptions = shuffleArray(wrongOptions).slice(0, 2);
+
+            const options = shuffleArray([correctPreviousAyah, ...wrongOptions]);
+            const correctPosition = options.indexOf(correctPreviousAyah) + 1;
+
+            audioQueue = options.map(a => `https://cdn.islamic.network/quran/audio/128/${selectedQari}/${a.number}.mp3`);
+
+            currentQuestionData.title = "اختر الآية السابقة (سمعيًا)";
+            questionArea.innerHTML = `<h3>السؤال ${currentQuestionIndex + 1}: استمع للآية التالية، ثم حدد الآية التي تسبقها من المقطع الصوتي.</h3>
+                                      <p>الآية الرئيسية:</p>
+                                      <audio controls autoplay src="https://cdn.islamic.network/quran/audio/128/${selectedQari}/${questionAyah.number}.mp3"></audio>
+                                      <hr>
+                                      <p>استمع للمقطع التالي الذي يحتوي على الآية الصحيحة، ثم اختر ترتيبها.</p>
+                                      <button onclick="playAudioQueue()">▶️ تشغيل مقطع الخيارات</button>
+                                      <div class="interactive-area">
+                                        ${[1, 2, 3].map(num => `<div class="number-box" data-correct="${num === correctPosition}">${num}</div>`).join('')}
+                                      </div>`;
+
+            addChoiceListeners(`الآية السابقة كانت في الموضع رقم ${correctPosition}. <br>وهي: "${correctPreviousAyah.text.substring(0, 50)}..."`);
+        }
+
+        function generateAudioFindFirstQuestion() {
+            if (pageAyahs.length < 3) return generateLocateAyahQuestion();
+            const correctFirstAyah = pageAyahs[0];
+            let wrongOptions = shuffleArray(pageAyahs.slice(1)).slice(0, 2);
+            const options = shuffleArray([correctFirstAyah, ...wrongOptions]);
+            const correctPosition = options.indexOf(correctFirstAyah) + 1;
+            
+            audioQueue = options.map(a => `https://cdn.islamic.network/quran/audio/128/${selectedQari}/${a.number}.mp3`);
+            
+            currentQuestionData.title = "تحديد آية بداية الصفحة";
+            questionArea.innerHTML = `<h3>السؤال ${currentQuestionIndex + 1}: استمع للآيات، ثم اختر رقم الآية التي تقع في بداية الصفحة.</h3>
+                                      <p>اضغط على الرقم الذي يوافق ترتيبها في المقطع الصوتي.</p>
+                                      <button onclick="playAudioQueue()">▶️ تشغيل المقطع الصوتي</button>
+                                      <div class="interactive-area">
+                                        ${[1, 2, 3].map(num => `<div class="number-box" data-correct="${num === correctPosition}">${num}</div>`).join('')}
+                                      </div>`;
+            addChoiceListeners(`الآية الصحيحة كانت في الموضع رقم ${correctPosition}. <br>وهي: "${correctFirstAyah.text.substring(0, 50)}..."`);
+        }
+
+        function generateAudioFindLastQuestion() {
+            if (pageAyahs.length < 3) return generateLocateAyahQuestion();
+            const correctLastAyah = pageAyahs[pageAyahs.length - 1];
+            let wrongOptions = shuffleArray(pageAyahs.slice(0, -1)).slice(0, 2);
+            const options = shuffleArray([correctLastAyah, ...wrongOptions]);
+            const correctPosition = options.indexOf(correctLastAyah) + 1;
+
+            audioQueue = options.map(a => `https://cdn.islamic.network/quran/audio/128/${selectedQari}/${a.number}.mp3`);
+
+            currentQuestionData.title = "تحديد آية نهاية الصفحة";
+            questionArea.innerHTML = `<h3>السؤال ${currentQuestionIndex + 1}: استمع للآيات، ثم اختر رقم الآية التي تقع في نهاية الصفحة.</h3>
+                                      <p>اضغط على الرقم الذي يوافق ترتيبها في المقطع الصوتي.</p>
+                                      <button onclick="playAudioQueue()">▶️ تشغيل المقطع الصوتي</button>
+                                      <div class="interactive-area">
+                                        ${[1, 2, 3].map(num => `<div class="number-box" data-correct="${num === correctPosition}">${num}</div>`).join('')}
+                                      </div>`;
+            addChoiceListeners(`الآية الصحيحة كانت في الموضع رقم ${correctPosition}. <br>وهي: "${correctLastAyah.text.substring(0, 50)}..."`);
+        }
+
+    </script>
+
+</body>
+</html>
